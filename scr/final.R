@@ -15,7 +15,7 @@ colnames(dat) <- as.character(raw[time_row, 2:15])
 dat <- dat[complete.cases(dat[[1]]),]
 
 
-
+#add comment here
 #Convert wells to numeric
 colnames(dat)[1:14] <- c("time", "Temperature","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12")
 well_cols <- 3:ncol(dat)
@@ -58,34 +58,23 @@ long_data <- dat|>
   mutate(
     time_hours = as.numeric(substr(time, 1, regexpr(":", time) -1)),
     absorbance = as.numeric(absorbance),
-    bleach = as.numeric(bleach)
+    Temperature = as.numeric(Temperature)
   ) %>%
   filter(!is.na(absorbance) & absorbance > 0)
 
 
 
-# Clean variables
-data_clean <- data_joined %>%
-  mutate(
-    strain = factor(strain),
-    treatment = factor(treatment),
-    day = factor(day),
-    stress_type = case_when(
-      treatment %in% c("ethanol", "bleach") ~ "chemical",
-      treatment == "pq" ~ "oxidative",
-      TRUE ~ "control"
-    )
-  )
-
 #Data summaries
 
-summary_data <- data_clean %>%
-  group_by(strain, treatment, concentration, day, time_hours) %>%
+summary_data <- long_data %>%
+  group_by(time, Temperature, well, absorbance, time_hours) %>%
   summarise(
     mean_abs = mean(absorbance, na.rm = TRUE),
     sd_abs = sd(absorbance, na.rm = TRUE),
     .groups = "drop"
   )
+
+
 
 #VISUALIZATIONS
 
