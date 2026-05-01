@@ -9,7 +9,7 @@ library(ggplot2)
 raw <- read_csv("data/ethanol2_3_5Bleach50_100_200ppm_PQ50_100_150uM_D74D105_ex3.csv")
 
 #Read + extract
-time_row <- 32
+time_row <- 26
 dat <- raw[(time_row +1):nrow(raw), 2:15]
 colnames(dat) <- as.character(raw[time_row, 2:15])
 dat <- dat[complete.cases(dat[[1]]),]
@@ -79,9 +79,9 @@ summary_data <- long_data %>%
 #VISUALIZATIONS
 
 # Plot 1: Growth curves
-plot1 <- ggplot(summary_data, aes(x = time_hours, y = mean_abs, color = strain)) +
+ ggplot(summary_data, aes(x = time_hours, y = mean_abs)) +
   geom_line() +
-  facet_wrap(~ treatment) +
+  facet_wrap(~ well) +
   theme_minimal() +
   labs(
     title = "GBS Growth Under Stress Conditions",
