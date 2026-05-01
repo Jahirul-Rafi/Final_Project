@@ -62,33 +62,41 @@ long_data <- dat|>
   ) %>%
   filter(!is.na(absorbance) & absorbance > 0)
 
+library(hms)
 
+dat_long <- dat_long %>%
+  mutate(time_num = as.numeric(as_hms(time)))
 
 #Data summaries
 
-summary_data <- long_data %>%
-  group_by(time, Temperature, well, absorbance, time_hours) %>%
+
+
+summary_data <- dat_long %>%
+  group_by(time_num, Condition) %>%
   summarise(
-    mean_abs = mean(absorbance, na.rm = TRUE),
-    sd_abs = sd(absorbance, na.rm = TRUE),
+    mean_OD = mean(OD, na.rm = TRUE),
+    sd_OD   = sd(OD, na.rm = TRUE),
+    n       = n(),
+    se_OD   = sd_OD / sqrt(n),
     .groups = "drop"
   )
-
-
-
 #VISUALIZATIONS
 
-# Plot 1: Growth curves
- ggplot(summary_data, aes(x = time_hours, y = mean_abs)) +
-  geom_line() +
-  facet_wrap(~ well) +
-  theme_minimal() +
-  labs(
-    title = "GBS Growth Under Stress Conditions",
-    x = "Time (hours)",
-    y = "Mean Optical Density"
-  )
+# Plot 1: Growth curves of A909 in Bleach Treatment
 
+ ggplot(summary_data, aes(x = time_num, y = mean_OD, color = Condition)) +
+   geom_line(size = 1.2) +
+   geom_ribbon(aes(ymin = mean_OD - se_OD, ymax = mean_OD + se_OD, fill = Condition),
+               alpha = 0.2, color = NA) +
+   theme_classic() +
+   labs(
+     title = "GBS Growth Curve",
+     x = "Time (seconds)",
+     y = "OD600"
+   )
+ 
+ summary(summary_data$mean_OD)
+ summary(summary_data$time_num)
 # Plot 2: Final OD comparison
 final_time <- max(summary_data$time_hours, na.rm = TRUE)
 
