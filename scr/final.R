@@ -65,35 +65,38 @@ long_data <- dat|>
 library(hms)
 
 dat_long <- dat_long %>%
-  mutate(time_num = as.numeric(as_hms(time)))
+  mutate(
+    time_hours = as.numeric(hms::as_hms(time)) / 3600
+  )
+dat_long <- dat_long %>%
+  filter(!is.na(time_hours))
 
 #Data summaries
 
-
-
 summary_data <- dat_long %>%
-  group_by(time_num, Condition) %>%
+  group_by(time_hours, Condition) %>%
   summarise(
     mean_OD = mean(OD, na.rm = TRUE),
     sd_OD   = sd(OD, na.rm = TRUE),
-    n       = n(),
+    n       = sum(!is.na(OD)),
     se_OD   = sd_OD / sqrt(n),
     .groups = "drop"
-  )
+  ) %>%
+  filter(!is.na(time_hours))
 #VISUALIZATIONS
 
 # Plot 1: Growth curves of A909 in Bleach Treatment
 
- ggplot(summary_data, aes(x = time_num, y = mean_OD, color = Condition)) +
-   geom_line(size = 1.2) +
-   geom_ribbon(aes(ymin = mean_OD - se_OD, ymax = mean_OD + se_OD, fill = Condition),
-               alpha = 0.2, color = NA) +
-   theme_classic() +
-   labs(
-     title = "GBS Growth Curve",
-     x = "Time (seconds)",
-     y = "OD600"
-   )
+ggplot(summary_data, aes(x = time_hours, y = mean_OD, color = Condition)) +
+  geom_line(size = 1.2) +
+  geom_ribbon(aes(ymin = mean_OD - se_OD, ymax = mean_OD + se_OD, fill = Condition),
+              alpha = 0.2, color = NA) +
+  theme_classic() +
+  labs(
+    title = "GBS Growth Curve",
+    x = "Time (hours)",
+    y = "OD600"
+  )
  
  summary(summary_data$mean_OD)
  summary(summary_data$time_num)
