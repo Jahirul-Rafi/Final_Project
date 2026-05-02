@@ -4,23 +4,26 @@ library(tidyr)
 library(janitor)
 library(stringr)
 library(ggplot2)
+library(hms)
 
 #Read CSV
 raw <- read_csv("data/ethanol2_3_5Bleach50_100_200ppm_PQ50_100_150uM_D74D105_ex3.csv")
 
+#Growth Curve for A909, A909 D74, A909 D105 Treated with Bleach with concenration of untreated, 50ppm, 100ppm, 200ppm with 3 replicate.
 #Read + extract
 time_row <- 26
-dat <- raw[(time_row +1):nrow(raw), 2:15]
-colnames(dat) <- as.character(raw[time_row, 2:15])
+dat <- raw[(time_row +1):nrow(raw), 2:39]
+colnames(dat) <- as.character(raw[time_row, 2:39])
 dat <- dat[complete.cases(dat[[1]]),]
 
 
-#add comment here
+
 #Convert wells to numeric
-colnames(dat)[1:14] <- c("time", "Temperature","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12")
+colnames(dat)[1:38] <- c("time", "Temperature","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","B1","B2","B3","B4","B5","B6","B7","B8","B9","B10","B11","B12","C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12")
 well_cols <- 3:ncol(dat)
 dat[well_cols] <- lapply(dat[well_cols], function (x) as.numeric(as.character(x)))
 
+#Convert the data into Long format
 dat_long <- dat %>%
   pivot_longer(
     cols = 3:ncol(dat),   # all well columns
@@ -28,6 +31,7 @@ dat_long <- dat %>%
     values_to = "OD"
   )
 
+#Designate the Conditions and Replicates
 dat_long <- dat_long %>%
   mutate(
     Condition = case_when(
@@ -35,40 +39,39 @@ dat_long <- dat_long %>%
       Well %in% c("A4","A5","A6") ~ "A909_50ppm",
       Well %in% c("A7","A8","A9") ~ "A909_100ppm",
       Well %in% c("A10","A11","A12") ~ "A909_200ppm",
+      Well %in% c("B1","B2","B3") ~ "A909_D50_un",
+      Well %in% c("B4","B5","B6") ~ "A909_D50_50ppm",
+      Well %in% c("B7","B8","B9") ~ "A909_D50_100ppm",
+      Well %in% c("B10","B11","B12") ~ "A909_D50_200ppm",
+      Well %in% c("C1","C2","C3") ~ "A909_D105_un",
+      Well %in% c("C4","C5","C6") ~ "A909_D105_50ppm",
+      Well %in% c("C7","C8","C9") ~ "A909_D105_100ppm",
+      Well %in% c("C10","C11","C12") ~ "A909_D105_200",
       TRUE ~ NA_character_
     ),
     Replicate = case_when(
       Well %in% c("A1","A4","A7","A10") ~ "R1",
       Well %in% c("A2","A5","A8","A11") ~ "R2",
       Well %in% c("A3","A6","A9","A12") ~ "R3",
+      Well %in% c("B1","B4","B7","B10") ~ "R4",
+      Well %in% c("B2","B5","B8","B11") ~ "R5",
+      Well %in% c("B3","B6","B9","B12") ~ "R6",
+      Well %in% c("C1","C4","C7","C10") ~ "R7",
+      Well %in% c("C2","C5","C8","C11") ~ "R8",
+      Well %in% c("C3","C6","C9","C12") ~ "R9",
       TRUE ~ NA_character_
     )
   ) %>%
   filter(!is.na(Condition))
 
 
-#Pivot long
-long_data <- dat|>
-  pivot_longer(
-    cols = -c("time", "Temperature"),
-    names_to = "well",
-    values_to = "absorbance",
-    values_drop_na = TRUE
-  ) %>%
-  mutate(
-    time_hours = as.numeric(substr(time, 1, regexpr(":", time) -1)),
-    absorbance = as.numeric(absorbance),
-    Temperature = as.numeric(Temperature)
-  ) %>%
-  filter(!is.na(absorbance) & absorbance > 0)
+#Convert the time into hours
 
-library(hms)
-
-dat_long <- dat_long %>%
+dat_long <- dat_long |>
   mutate(
     time_hours = as.numeric(hms::as_hms(time)) / 3600
   )
-dat_long <- dat_long %>%
+dat_long <- dat_long |>
   filter(!is.na(time_hours))
 
 #Data summaries
@@ -98,8 +101,7 @@ ggplot(summary_data, aes(x = time_hours, y = mean_OD, color = Condition)) +
     y = "OD600"
   )
  
- summary(summary_data$mean_OD)
- summary(summary_data$time_num)
+
 # Plot 2: Final OD comparison
 final_time <- max(summary_data$time_hours, na.rm = TRUE)
 
